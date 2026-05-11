@@ -1,0 +1,55 @@
+services:
+
+  # ── 1. Kafka broker (KRaft mode — no Zookeeper needed) ───────────────────
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: movielens_kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ── 2. Producer — streams fake MovieLens ratings into Kafka ───────────────
+  producer:
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
+    container_name: movielens_producer
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./spark:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python /app/producer.py
+
+  # ── 3. Spark consumer — reads from Kafka and analyses the stream ──────────
+  spark:
+    build:
+      context: ./spark
+      dockerfile: Dockerfile
+    container_name: movielens_spark
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./spark:/app
+      - ./checkpoints:/checkpoints
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Change this line to switch phases:
+    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase2_spark_console.py
