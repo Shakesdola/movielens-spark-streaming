@@ -1,166 +1,247 @@
-# MovieLens Spark Streaming — Local Setup Guide
+# Real-time Analysis of Movie Ratings with Apache Spark Structured Streaming
 
-## Folder structure
+**Team:** Daniela Shahini, Jiaxin Li  
+**Course:** Distributed and Scalable Systems  
+**Dataset:** MovieLens ratings stream via Apache Kafka
 
-After setup your project looks like this:
+---
+
+## Overview
+
+This project implements an end-to-end streaming analytics pipeline that ingests live movie ratings from a Kafka broker and processes them incrementally using Apache Spark Structured Streaming. Rather than treating the MovieLens dataset as a static dump, we observe ratings as a continuous stream — closer to how production recommendation systems operate.
+
+The pipeline progresses through four phases, from basic stream ingestion to windowed trend detection.
+
+---
+
+## Architecture
 
 ```
-movielens-streaming/
-├── docker-compose.yml
-├── checkpoints/            ← created manually, Spark writes state here
+MovieLens Server (get.awesomedata.stream:9093)
+        │
+        ▼
+┌───────────────────┐
+│   Producer        │  Python script — pulls live ratings, pushes to Kafka
+│   (producer.py)   │
+└────────┬──────────┘
+         │  topic: ratings
+         ▼
+┌───────────────────┐
+│   Kafka Broker    │  Apache Kafka 3.7.0 (KRaft mode, no Zookeeper)
+│   kafka:9092      │
+└────────┬──────────┘
+         │
+         ▼
+┌───────────────────┐
+│   Spark Job       │  PySpark Structured Streaming 3.5.1
+│   (phase*.py)     │  Stateful aggregations, sliding windows
+└───────────────────┘
+```
+
+All components run in Docker containers via Docker Compose.
+
+---
+
+## Repository Structure
+
+```
+movielens-spark-streaming/
+├── docker-compose.yml          # Defines kafka, producer, spark services
+├── checkpoints/                # Spark streaming checkpoints (auto-created)
+│   ├── movies/
+│   ├── genres/
+│   └── windows/
 └── spark/
-    ├── Dockerfile
-    ├── requirements.txt
-    ├── producer.py         ← generates fake ratings → Kafka
-    ├── phase1_kafka_test.py
-    ├── phase2_spark_console.py
-    ├── phase3_aggregations.py
-    └── phase4_windows.py
+    ├── Dockerfile              # Image for both producer and spark containers
+    ├── requirements.txt        # Python dependencies
+    ├── producer.py             # Kafka producer — streams ratings into topic
+    ├── phase1_kafka_test.py    # Plain Kafka consumer — confirms stream works
+    ├── phase2_spark_console.py # Spark reads and parses JSON stream
+    ├── phase3_aggregations.py  # Running avg per movie and genre (stateful)
+    ├── phase4_windows.py       # Sliding window trend detection
+    └── ml-latest-small/        # Static MovieLens metadata (for enrichment)
 ```
 
 ---
 
-## Step 1 — Create the folders (PowerShell)
+## Prerequisites
 
-```powershell
-mkdir movielens-streaming
-cd movielens-streaming
-mkdir spark
-mkdir checkpoints
-```
-
-Then copy all files into the folders as shown above.
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac) or Docker Engine (Linux)
+- Docker Compose v2 (included with Docker Desktop)
+- At least 4 GB RAM allocated to Docker
+- Internet access (producer connects to `get.awesomedata.stream:9093`)
 
 ---
 
-## Step 2 — Build Docker images (first time only, ~5 min)
+## Quick Start
 
-```powershell
-docker compose build
+### 1. Clone the repository
+
+```bash
+git clone <your-repo-url>
+cd movielens-spark-streaming
 ```
 
----
+### 2. Choose which phase to run
 
-## Step 3 — Run Phase 1 (plain Kafka consumer test)
-
-The default command in docker-compose.yml is already set to phase1.
-
-```powershell
-docker compose up
-```
-
-**What you should see:**
-
-```
-movielens_producer  | ✅ Connected to Kafka on attempt 1
-movielens_producer  |   [1] Sent → User  342  4.0⭐  'Matrix, The (1999)'
-movielens_producer  |   [2] Sent → User  342  5.0⭐  'Dark Knight, The (2008)'
-
-movielens_spark     | ✅ Connected to Kafka on attempt 1
-movielens_spark     |   [ 1] User  342 rated 'Matrix, The (1999)'  →  4.0 ⭐
-movielens_spark     |   [ 2] User  342 rated 'Dark Knight, The (2008)'  →  5.0 ⭐
-...
-movielens_spark     | ✅ Phase 1 PASSED — Kafka stream is working perfectly.
-```
-
-Stop with Ctrl+C.
-
----
-
-## Step 4 — Switch to Phase 2 (Spark reads the stream)
-
-Open docker-compose.yml and change the last line of the spark service:
+Open `docker-compose.yml` and find the last line of the `spark` service. Change the filename to the phase you want:
 
 ```yaml
-    # Change this:
-    command: python /app/phase1_kafka_test.py
-
-    # To this:
-    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase2_spark_console.py
+# Change this line to switch phases:
+command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase4_windows.py
 ```
 
-Then:
+| Phase | File | What it does |
+|-------|------|--------------|
+| 1 | `phase1_kafka_test.py` | Plain Kafka consumer — confirms stream is live |
+| 2 | `phase2_spark_console.py` | Spark parses JSON and prints raw records |
+| 3 | `phase3_aggregations.py` | Running averages per movie and genre |
+| 4 | `phase4_windows.py` | Sliding window trend detection |
 
-```powershell
-docker compose up
+### 3. Start the pipeline
+
+```bash
+docker compose up -d
 ```
 
-NOTE: The first time spark-submit runs, it downloads the Kafka JAR (~50MB).
-This takes 1-2 minutes. After that it is cached inside the container.
+### 4. Watch the output
 
----
-
-## Step 5 — Switch to Phase 3 (running aggregations)
-
-Wipe checkpoints first (important!):
-
-```powershell
-# PowerShell
-Remove-Item -Recurse -Force checkpoints\*
-```
-
-Change docker-compose.yml command to:
-
-```yaml
-    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase3_aggregations.py
-```
-
-```powershell
-docker compose up
-```
-
----
-
-## Step 6 — Switch to Phase 4 (sliding windows)
-
-```powershell
-Remove-Item -Recurse -Force checkpoints\*
-```
-
-Change command to:
-
-```yaml
-    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase4_windows.py
-```
-
-```powershell
-docker compose up
-```
-
----
-
-## Useful commands
-
-```powershell
-# Stop everything
-docker compose down
-
-# Rebuild after changing requirements.txt or Dockerfile
-docker compose build --no-cache
-
-# See logs of one container only
+```bash
 docker compose logs -f spark
-docker compose logs -f producer
-
-# Wipe checkpoints between phases
-Remove-Item -Recurse -Force checkpoints\*
 ```
+
+### 5. Stop the pipeline
+
+```bash
+docker compose down
+```
+
+---
+
+## Phase Details
+
+### Phase 1 — Kafka Connection Test (`phase1_kafka_test.py`)
+
+Confirms the local Kafka broker is receiving ratings from the MovieLens stream. Prints 20 raw messages then exits.
+
+Expected output:
+```
+✅ Connected to Kafka on attempt 1
+  [  1] User  414 rated 'Bad Boys (1995)'  →  2.0 ⭐  | genres: ['Action', 'Comedy']
+  [  2] User  489 rated 'Descendants, The (2011)'  →  3.5 ⭐  | genres: ['Comedy', 'Drama']
+✅ Phase 1 PASSED — Kafka stream is working perfectly.
+```
+
+### Phase 2 — Spark JSON Parsing (`phase2_spark_console.py`)
+
+Spark reads from Kafka and decodes each JSON message into structured columns: `userId`, `movieId`, `title`, `genres`, `rating`, `timestamp`. Prints one record per micro-batch to console.
+
+### Phase 3 — Stateful Aggregations (`phase3_aggregations.py`)
+
+Two running aggregations updated on every micro-batch:
+
+- **Movie stats** — running average rating and count per movie (shown only for movies with 3+ ratings)
+- **Genre stats** — rating volume and average score per genre across all time
+
+Output mode: `complete` (full table reprinted each batch).
+
+### Phase 4 — Sliding Window Trend Detection (`phase4_windows.py`)
+
+Detects which genres have the highest activity in recent time windows using:
+
+- Window size: 10 minutes
+- Slide interval: 2 minutes  
+- Watermark: 5 minutes (tolerates late-arriving data)
+- Event time: processing time (`current_timestamp`) — used because the source timestamps are historical
+
+Output mode: `update` (only changed windows are printed per batch).
+
+Example output:
+```
++------------------------------------------+---------+----------+------------+
+|window                                    |genre    |avg_rating|rating_count|
++------------------------------------------+---------+----------+------------+
+|{2026-05-11 15:48:00, 2026-05-11 15:58:00}|Drama    |4.25      |12          |
+|{2026-05-11 15:48:00, 2026-05-11 15:58:00}|Comedy   |3.6       |8           |
+|{2026-05-11 15:48:00, 2026-05-11 15:58:00}|Sci-Fi   |3.429     |7           |
++------------------------------------------+---------+----------+------------+
+```
+
+---
+
+## Configuration
+
+### Switching phases
+
+Edit the `command` line in `docker-compose.yml` under the `spark` service. After changing, restart:
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+If switching to Phase 4 from another phase, clear the checkpoint first:
+
+```bash
+# Windows (PowerShell)
+Remove-Item -Recurse -Force checkpoints\windows
+
+# Mac/Linux
+rm -rf checkpoints/windows
+```
+
+### Kafka topic
+
+The producer connects to `get.awesomedata.stream:9093` on topic `ratings` and republishes messages to the local broker on `kafka:9092`, topic `ratings`.
+
+### Spark configuration
+
+| Setting | Value |
+|---------|-------|
+| Spark version | 3.5.1 |
+| Kafka package | `spark-sql-kafka-0-10_2.12:3.5.1` |
+| Shuffle partitions | 4 |
+| Log level | WARN |
 
 ---
 
 ## Troubleshooting
 
-**"Kafka not ready" keeps looping** — Kafka takes ~20 seconds to start.
-The producer and consumer both retry automatically. Just wait.
+**Containers exit immediately**  
+Check logs: `docker compose logs spark`  
+Most common cause: Kafka not ready yet. Wait 30 seconds and retry.
 
-**Spark produces no output** — It uses startingOffsets=latest,
-so it only sees messages arriving after Spark starts. Wait 30 seconds.
+**Empty batches in Phase 3 (movie table)**  
+The movie table requires 3+ ratings for the same movie. This takes a few minutes to accumulate — normal behaviour.
 
-**"No space left on device" inside Docker** — Go to Docker Desktop →
-Settings → Resources → Disk image size and increase it.
+**Empty batches in Phase 4**  
+If using event-time timestamps from the source data, Spark's watermark drops them as late. The fix is already applied in the current `phase4_windows.py` — it uses `current_timestamp()` instead.
 
-**Out of memory** — Go to Docker Desktop → Settings → Resources →
-Memory and set it to at least 4GB.
+**`failOnDataLoss` error**  
+Kafka aged out messages between restarts. Already handled in Phase 4 with `.option("failOnDataLoss", "false")`.
 
-**Checkpoint error when switching phases** — Always run
-Remove-Item -Recurse -Force checkpoints\* before switching phases.
+**`grep` not found on Windows**  
+Use PowerShell equivalent: `docker compose logs spark | Select-String "ERROR"`
+
+---
+
+## Dependencies
+
+Listed in `spark/requirements.txt`. Key packages:
+
+- `pyspark==3.5.1`
+- `kafka-python`
+
+The Spark Kafka connector is loaded at runtime via `--packages` in the `spark-submit` command — no manual JAR download needed.
+
+---
+
+## Notes on Streaming vs Batch
+
+A one-shot batch analysis on the same data would compute identical aggregate statistics, but could not:
+
+- Detect genre trends within short time windows as they emerge
+- React to sudden spikes in rating volume for a specific genre
+- Maintain continuously updated running averages without reprocessing history
+
+The windowed aggregations in Phase 4 are the clearest demonstration of what streaming adds over batch: the ability to ask "what is trending *right now*" rather than "what was popular overall".

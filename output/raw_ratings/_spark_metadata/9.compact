@@ -1,0 +1,11 @@
+v1
+{"path":"file:///output/raw_ratings/part-00000-2e79d414-b12f-4310-a6f0-91a6f150cc1f-c000.snappy.parquet","size":1959,"isDir":false,"modificationTime":1778584723261,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-77545fcd-0b3a-4e52-a84c-615e861541ce-c000.snappy.parquet","size":3880,"isDir":false,"modificationTime":1778584740936,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-47c91ea1-458a-4c23-b638-63e2f0a5f7b4-c000.snappy.parquet","size":4414,"isDir":false,"modificationTime":1778584770968,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-81a31382-7f3b-4d48-ad62-51e28f60124f-c000.snappy.parquet","size":4494,"isDir":false,"modificationTime":1778584801011,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-b9137934-1005-44c7-8bea-f099be5bcb7f-c000.snappy.parquet","size":4425,"isDir":false,"modificationTime":1778584830568,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-d08e1e01-d8d0-4578-b067-9bfbc190ab79-c000.snappy.parquet","size":4365,"isDir":false,"modificationTime":1778584860666,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-431128d4-faa3-4eb4-bdf8-f03ebe276c2c-c000.snappy.parquet","size":4451,"isDir":false,"modificationTime":1778584890689,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-f528b38a-b991-486e-b427-5c241e9bac24-c000.snappy.parquet","size":4437,"isDir":false,"modificationTime":1778584920728,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-c45b5ffd-037c-4a2b-b071-1b083f7b4e20-c000.snappy.parquet","size":4292,"isDir":false,"modificationTime":1778584950785,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-23c844f7-4e3b-4193-b11e-4f508549ed0a-c000.snappy.parquet","size":4347,"isDir":false,"modificationTime":1778584980845,"blockReplication":1,"blockSize":33554432,"action":"add"}

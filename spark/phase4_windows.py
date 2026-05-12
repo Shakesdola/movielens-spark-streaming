@@ -6,7 +6,7 @@ Detects which genres have the highest activity in recent windows.
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (
     from_json, col, explode, avg, count, window,
-    round as spark_round, from_unixtime
+    round as spark_round, current_timestamp
 )
 from pyspark.sql.types import StructType, StructField, StringType, ArrayType
 
@@ -36,14 +36,14 @@ parsed = (
     .option("kafka.bootstrap.servers", "kafka:9092")
     .option("subscribe", "ratings")
     .option("startingOffsets", "latest")
+    .option("failOnDataLoss", "false")
     .load()
     .select(from_json(col("value").cast("string"), RATING_SCHEMA).alias("r"))
     .select(
         col("r.movie.title").alias("title"),
         col("r.movie.genres").alias("genres"),
         col("r.rating").cast("double").alias("rating"),
-        from_unixtime(col("r.timestamp").cast("long"))
-            .cast("timestamp").alias("event_time"),
+        current_timestamp().alias("event_time"),
     )
 )
 
@@ -61,7 +61,6 @@ windowed = (
         spark_round(avg("rating"), 3).alias("avg_rating"),
         count("rating").alias("rating_count"),
     )
-    .orderBy(col("rating_count").desc())
 )
 
 query = (
