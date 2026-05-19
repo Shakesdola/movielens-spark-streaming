@@ -1,8 +1,8 @@
 # Real-time Analysis of Movie Ratings with Apache Spark Structured Streaming
 
 **Team:** Daniela Shahini, Jiaxin Li  
-**Course:** Distributed and Scalable Systems  
-**Dataset:** MovieLens ratings stream via Apache Kafka
+**Course:** Distributed Information System  
+**Dataset:** MovieLens ratings (ml-latest-small) stream via Apache Kafka
 
 ---
 
@@ -10,33 +10,14 @@
 
 This project implements an end-to-end streaming analytics pipeline that ingests live movie ratings from a Kafka broker and processes them incrementally using Apache Spark Structured Streaming. Rather than treating the MovieLens dataset as a static dump, we observe ratings as a continuous stream — closer to how production recommendation systems operate.
 
-The pipeline progresses through four phases, from basic stream ingestion to windowed trend detection.
+The pipeline progresses through six phases, from basic stream ingestion to windowed trend detection.
 
 ---
 
 ## Architecture
 
-```
-MovieLens Server (get.awesomedata.stream:9093)
-        │
-        ▼
-┌───────────────────┐
-│   Producer        │  Python script — pulls live ratings, pushes to Kafka
-│   (producer.py)   │
-└────────┬──────────┘
-         │  topic: ratings
-         ▼
-┌───────────────────┐
-│   Kafka Broker    │  Apache Kafka 3.7.0 (KRaft mode, no Zookeeper)
-│   kafka:9092      │
-└────────┬──────────┘
-         │
-         ▼
-┌───────────────────┐
-│   Spark Job       │  PySpark Structured Streaming 3.5.1
-│   (phase*.py)     │  Stateful aggregations, sliding windows
-└───────────────────┘
-```
+
+![Spark Streaming Diagram](DIS-workshop-SparkStream.png)
 
 All components run in Docker containers via Docker Compose.
 
@@ -48,17 +29,18 @@ All components run in Docker containers via Docker Compose.
 movielens-spark-streaming/
 ├── docker-compose.yml          # Defines kafka, producer, spark services
 ├── checkpoints/                # Spark streaming checkpoints (auto-created)
-│   ├── movies/
-│   ├── genres/
-│   └── windows/
+│   ├── parquet_raw/
+│   └── parquet_windows/
 └── spark/
     ├── Dockerfile              # Image for both producer and spark containers
     ├── requirements.txt        # Python dependencies
     ├── producer.py             # Kafka producer — streams ratings into topic
     ├── phase1_kafka_test.py    # Plain Kafka consumer — confirms stream works
-    ├── phase2_spark_console.py # Spark reads and parses JSON stream
-    ├── phase3_aggregations.py  # Running avg per movie and genre (stateful)
-    ├── phase4_windows.py       # Sliding window trend detection
+    ├── phase2_spark_console.py # Spark reads and parses JSON stream, print to the console
+    ├── phase3_aggregations.py  # Running avg per movie and genre (stateful), to console
+    ├── phase4_windows.py       # Sliding window trend detection, to console
+    ├── phase5_parquet_sink.py  # Write and append the aggregation and sliding window results to parquet files
+    ├── phase6_live_dashboard.py# Plotly read results from memory sink and display with a live dashboard
     └── ml-latest-small/        # Static MovieLens metadata (for enrichment)
 ```
 
@@ -78,7 +60,7 @@ movielens-spark-streaming/
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Shakesdola/movielens-spark-streaming.git
 cd movielens-spark-streaming
 ```
 
@@ -87,17 +69,23 @@ cd movielens-spark-streaming
 Open `docker-compose.yml` and find the last line of the `spark` service. Change the filename to the phase you want:
 
 ```yaml
-# Change this line to switch phases:
+# Select any of this lines and comment the others to switch phases:
+command: python /app/phase1_kafka_test.py
+command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase2_spark_console.py
+command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase3_aggregations.py
 command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase4_windows.py
+command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase5_parquet_sink.py
+command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase6_live_dashboard.py
 ```
 
-| Phase | File | What it does |
-|-------|------|--------------|
-| 1 | `phase1_kafka_test.py` | Plain Kafka consumer — confirms stream is live |
-| 2 | `phase2_spark_console.py` | Spark parses JSON and prints raw records |
-| 3 | `phase3_aggregations.py` | Running averages per movie and genre |
-| 4 | `phase4_windows.py` | Sliding window trend detection |
-
+| Phase | File | What it does                                                                |
+|-------|------|-----------------------------------------------------------------------------|
+| 1 | `phase1_kafka_test.py` | Plain Kafka consumer — confirms stream is live                              |
+| 2 | `phase2_spark_console.py` | Spark parses JSON and prints raw records                                    |
+| 3 | `phase3_aggregations.py` | Running averages per movie and genre                                        |
+| 4 | `phase4_windows.py` | Sliding window trend detection                                              |
+| 5 | `phase5_parquet_output.py` | Writes raw ratings and windowed trends to Parquet                           |
+| 6 | `phase6_live_dashboard.py` | In-memory aggregations with live Plotly dashboard |
 ### 3. Start the pipeline
 
 ```bash
@@ -167,6 +155,116 @@ Example output:
 +------------------------------------------+---------+----------+------------+
 ```
 
+### Phase 5 — Persisting Streaming Results to Parquet (`phase5_parquet_sink.py`)
+
+Persists streaming results to Parquet files for offline analysis and batch-vs-stream comparison.
+
+Two datasets are continuously written:
+
+#### Raw Parsed Ratings
+Saved to:
+```text
+/output/raw_ratings/
+```
+
+Contains every parsed rating event received from Kafka, including:
+
+- userId
+- movieId
+- title
+- genres
+- rating
+- event_time
+
+Output mode:
+```text
+append
+```
+
+Each incoming micro-batch appends new rows to Parquet storage.
+
+
+#### Windowed Genre Trends
+Saved to:
+```text
+/output/windowed_trends/
+```
+
+Contains sliding-window aggregations generated in Phase 4:
+
+- window start/end
+- genre
+- average rating
+- rating count
+
+Configuration:
+
+- Window size: 10 minutes
+- Slide interval: 2 minutes
+- Watermark: 30 seconds
+
+Output mode:
+```text
+append
+```
+
+This dataset enables:
+
+- Offline batch recomputation
+- Stream-vs-batch validation
+- Historical trend analysis
+- Dashboard replay and experimentation
+
+The streaming job runs for 30 minutes before automatically stopping.
+
+Example startup log:
+```text
+=== Phase 5: Writing to Parquet (runs for 30 minutes then stops) ===
+```
+
+Example completion log:
+```text
+=== Done. Check /output/ for Parquet files. ===
+```
+
+---
+
+### Phase 6 — Real-Time Dashboard (`phase6_live_dashboard.py`)
+
+Builds a live analytics dashboard using:
+
+```text
+Kafka → Spark Structured Streaming → Memory Sink → Dash + Plotly
+```
+
+The dashboard continuously queries Spark memory tables and updates visualizations every 10 seconds.
+
+Open locally:
+```text
+http://localhost:8050
+```
+
+---
+
+#### Live KPI Cards
+
+The dashboard displays continuously updating metrics:
+
+- Total ratings processed
+- Number of unique movies
+- Number of unique users
+- Global average rating
+
+These KPIs are recomputed after every micro-batch using Spark memory tables.
+
+Four charts are displayed for intuitively observation:
+
+- Chart 1 — Rating volume and average score by genre
+- Chart 2 - Recent top-10 movies (last 10-minute window)
+- Chart 3 - Event trends: Ratings received per 10-second interval
+- Chart 4 - Distribution of movie average ratings
+
+
 ---
 
 ## Configuration
@@ -180,19 +278,18 @@ docker compose down
 docker compose up -d
 ```
 
-If switching to Phase 4 from another phase, clear the checkpoint first:
+If switching to Phase 4 and 5 from another phase, clear the checkpoint first:
 
 ```bash
 # Windows (PowerShell)
-Remove-Item -Recurse -Force checkpoints\windows
+Remove-Item -Recurse -Force checkpoints\*
+Remove-Item -Recurse -Force output\*
 
 # Mac/Linux
-rm -rf checkpoints/windows
+rm -rf checkpoints/*
+rm -rf output/*
 ```
 
-### Kafka topic
-
-The producer connects to `get.awesomedata.stream:9093` on topic `ratings` and republishes messages to the local broker on `kafka:9092`, topic `ratings`.
 
 ### Spark configuration
 
@@ -235,13 +332,3 @@ Listed in `spark/requirements.txt`. Key packages:
 The Spark Kafka connector is loaded at runtime via `--packages` in the `spark-submit` command — no manual JAR download needed.
 
 ---
-
-## Notes on Streaming vs Batch
-
-A one-shot batch analysis on the same data would compute identical aggregate statistics, but could not:
-
-- Detect genre trends within short time windows as they emerge
-- React to sudden spikes in rating volume for a specific genre
-- Maintain continuously updated running averages without reprocessing history
-
-The windowed aggregations in Phase 4 are the clearest demonstration of what streaming adds over batch: the ability to ask "what is trending *right now*" rather than "what was popular overall".

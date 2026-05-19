@@ -62,23 +62,5 @@ services:
     #command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase2_spark_console.py
     #command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase3_aggregations.py
     #command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase4_windows.py
-#    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase5_parquet_sink.py
-    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase6_live_dashboard.py
-
-  # Only for phase 5, otherwise comment this service
-  # ── 4. Dashboard — reads Parquet written by Spark, serves charts ─────────
-#  dashboard:
-#    build:
-#      context: ./spark
-#      dockerfile: Dockerfile
-#    container_name: movielens_dashboard
-#    depends_on:
-#      - spark
-#    volumes:
-#      - ./spark:/app        # so it can find dashboard.py
-#      - ./output:/output    # same folder Spark writes Parquet to
-#    ports:
-#      - "8050:8050"
-#    environment:
-#      - PYTHONUNBUFFERED=1
-#    command: python /app/dashboard.py
+    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase5_parquet_sink.py
+#    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase6_live_dashboard.py

@@ -14,7 +14,7 @@ from plotly.subplots import make_subplots
 
 RAW_DIR      = "output/raw_ratings"
 WINDOWED_DIR = "output/windowed_trends"
-OUT_DIR      = "output/charts"
+OUT_DIR      = "analysis_output/charts"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ── Load Parquet files ────────────────────────────────────────────────────
@@ -132,8 +132,8 @@ if not windowed.empty:
     #     x="window_start",
     #     y="rating_count",
     #     color="genre",
-    #     facet_col="genre",      # 按类型分面
-    #     facet_col_wrap=4,       # 每行4个
+    #     facet_col="genre",
+    #     facet_col_wrap=4,
     #     title="Genre Activity in 10-Minute Sliding Windows",
     #     labels={"window_start": "Window Start", "rating_count": "Rating Count"},
     #     opacity=0.7,

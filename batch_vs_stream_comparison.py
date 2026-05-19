@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 
 RAW_DIR   = "output/raw_ratings"
 WIN_DIR   = "output/windowed_trends"
-OUT_DIR   = "analysis_output"
+OUT_DIR   = "analysis_output/batch_comparison"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 plt.rcParams.update({

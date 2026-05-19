@@ -21,7 +21,7 @@ from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
 
 RAW_DIR = "output/raw_ratings"
-OUT_DIR = "output/charts"
+OUT_DIR = "analysis_output/als"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ── Start Spark (batch mode, no streaming) ────────────────────────────────
