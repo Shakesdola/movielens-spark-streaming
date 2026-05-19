@@ -20,8 +20,9 @@ from pyspark.sql.functions import col, explode, avg, count, round as spark_round
 from pyspark.ml.recommendation import ALS
 from pyspark.ml.evaluation import RegressionEvaluator
 
-RAW_DIR = "output/raw_ratings"
-OUT_DIR = "analysis_output/als"
+RAW_DIR      = "output/raw_ratings"
+WINDOWED_DIR = "output/windowed_trends"
+OUT_DIR      = "analysis_output/als"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ── Start Spark (batch mode, no streaming) ────────────────────────────────
@@ -35,7 +36,7 @@ spark.sparkContext.setLogLevel("WARN")
 
 # ── Load Parquet files ────────────────────────────────────────────────────
 print("=== Loading Parquet files ===")
-raw_files = [f for f in glob.glob(f"{RAW_DIR}/*") if f.endswith(".parquet")]
+raw_files = [f for f in glob.glob(f"{RAW_DIR}/*") if f.endswith(".parquet") or f.endswith(".snappy.parquet")]
 if not raw_files:
     print(f"No files found in {RAW_DIR} — run Phase 5 first.")
     exit(1)
@@ -129,13 +130,22 @@ comparison.select("title", "streaming_avg", "als_predicted_avg", "num_ratings") 
 # ── ALS genre-level comparison ────────────────────────────────────────────
 print("\n=== Genre-level: Streaming avg vs ALS predicted avg ===")
 
-# Streaming genre averages
+# Load actual Spark streaming windowed aggregation results
+windowed_files = [f for f in glob.glob(f"{WINDOWED_DIR}/*") if f.endswith(".parquet") or f.endswith(".snappy.parquet")]
+if not windowed_files:
+    print(f"No windowed trend files found in {WINDOWED_DIR} — run Phase 5 first.")
+    spark.stop()
+    exit(1)
+
+windowed_df = spark.read.parquet(*windowed_files)
+
+# Aggregate across all windows to get overall streaming avg per genre
 streaming_genre = (
-    df.select(explode("genres").alias("genre"), "rating")
+    windowed_df
     .groupBy("genre")
     .agg(
-        spark_round(avg("rating"), 3).alias("streaming_avg"),
-        count("rating").alias("num_ratings"),
+        spark_round(avg("avg_rating"), 3).alias("streaming_avg"),
+        count("rating_count").alias("num_windows"),
     )
     .orderBy(col("streaming_avg").desc())
 )
@@ -151,7 +161,7 @@ als_genre = (
 genre_comparison = streaming_genre.join(als_genre, on="genre", how="inner")
 genre_comparison = genre_comparison.orderBy(col("streaming_avg").desc())
 
-print("\n  Genre comparison:")
+print("\n  Genre comparison (streaming windowed avg vs ALS predicted avg):")
 genre_comparison.show(20, truncate=False)
 
 # Convert to pandas for charting

@@ -4,6 +4,6 @@ checkpoints/
 # Python cache
 __pycache__/
 *.pyc
-
+output/
 # Docker leftovers
 *.log
