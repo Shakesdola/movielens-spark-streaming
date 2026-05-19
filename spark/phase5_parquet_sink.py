@@ -55,7 +55,7 @@ q1 = (
     .option("path", "/output/raw_ratings")
     .option("checkpointLocation", "/checkpoints/parquet_raw")
     .outputMode("append")
-    .trigger(processingTime="30 seconds")
+    .trigger(processingTime="5 seconds")
     .start()
 )
 
@@ -79,7 +79,7 @@ q2 = (
     .option("path", "/output/windowed_trends")
     .option("checkpointLocation", "/checkpoints/parquet_windows")
     .outputMode("append")
-    .trigger(processingTime="30 seconds")
+    .trigger(processingTime="5 seconds")
     .start()
 )
 

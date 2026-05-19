@@ -35,7 +35,7 @@ spark.sparkContext.setLogLevel("WARN")
 
 # ── Load Parquet files ────────────────────────────────────────────────────
 print("=== Loading Parquet files ===")
-raw_files = [f for f in glob.glob(f"{RAW_DIR}/*") if f.endswith(".parquet")]
+raw_files = [f for f in glob.glob(f"{RAW_DIR}/*") if f.endswith(".parquet") or f.endswith(".snappy.parquet")]
 if not raw_files:
     print(f"No files found in {RAW_DIR} — run Phase 5 first.")
     exit(1)

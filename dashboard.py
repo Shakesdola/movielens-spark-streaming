@@ -1,24 +1,21 @@
 """
 dashboard.py
-Live dashboard that reads from Kafka and updates every 5 seconds.
+Live dashboard that reads from Spark parquet output and updates every 5 seconds.
 Shows real-time genre trends, rating distributions, and event rates.
 
 Run this locally (outside Docker):
-    pip install dash plotly kafka-python pandas
+    pip install dash plotly pandas pyarrow
     python dashboard.py
 Then open: http://localhost:8050
 
-OR run inside Docker by adding a dashboard service to docker-compose.yml.
+Requires phase5_parquet_sink.py to be running (writes to ./output/raw_ratings/).
 """
 
-from collections import defaultdict
-from datetime import datetime
+import glob
+import os
 import threading
-import json
 import time
 
-from kafka import KafkaConsumer
-from kafka.errors import NoBrokersAvailable
 import pandas as pd
 
 import dash
@@ -29,53 +26,37 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # ── Config ────────────────────────────────────────────────────────────────
-BOOTSTRAP    = "localhost:9094"   # change to kafka:9092 if running inside Docker
-TOPIC        = "ratings"
-MAX_RECORDS  = 2000               # keep last N ratings in memory
+RAW_DIR     = "output/raw_ratings"   # Spark parquet output (mounted from Docker)
+MAX_RECORDS = 2000                  # keep last N ratings in memory
 
 # ── Shared in-memory store ────────────────────────────────────────────────
 records = []          # list of dicts
 lock    = threading.Lock()
 
-# ── Background Kafka consumer thread ─────────────────────────────────────
-def kafka_thread():
-    print("Connecting to Kafka...")
+# ── Background Spark parquet polling thread ───────────────────────────────
+def spark_thread():
+    print(f"Watching Spark output at: {RAW_DIR}")
     while True:
         try:
-            consumer = KafkaConsumer(
-                TOPIC,
-                bootstrap_servers=[BOOTSTRAP],
-                auto_offset_reset="latest",
-                value_deserializer=lambda b: json.loads(b.decode("utf-8")),
-                consumer_timeout_ms=1000,
-            )
-            print("✅ Connected to Kafka — consuming ratings...")
-            break
-        except NoBrokersAvailable:
-            print("  Kafka not ready, retrying in 3s...")
-            time.sleep(3)
-
-    while True:
-        try:
-            for msg in consumer:
-                d = msg.value
-                record = {
-                    "userId":    d.get("userId", "?"),
-                    "movieId":   d["movie"]["movieId"],
-                    "title":     d["movie"]["title"],
-                    "genres":    d["movie"]["genres"],
-                    "rating":    float(d["rating"]),
-                    "event_time": datetime.now(),
-                }
+            parquet_files = glob.glob(os.path.join(RAW_DIR, "*.parquet")) + \
+                            glob.glob(os.path.join(RAW_DIR, "*.snappy.parquet"))
+            if parquet_files:
+                df = pd.concat(
+                    [pd.read_parquet(f) for f in parquet_files],
+                    ignore_index=True,
+                )
+                df = df.sort_values("event_time").tail(MAX_RECORDS)
+                new_records = df.to_dict("records")
                 with lock:
-                    records.append(record)
-                    if len(records) > MAX_RECORDS:
-                        records.pop(0)
+                    records[:] = new_records
+                print(f"  Loaded {len(new_records)} records from {len(parquet_files)} file(s)")
+            else:
+                print(f"  No parquet files yet in {RAW_DIR}, waiting...")
         except Exception as e:
-            print(f"Kafka error: {e}, reconnecting...")
-            time.sleep(3)
+            print(f"Parquet read error: {e}")
+        time.sleep(5)
 
-threading.Thread(target=kafka_thread, daemon=True).start()
+threading.Thread(target=spark_thread, daemon=True).start()
 
 # ── Dash app ──────────────────────────────────────────────────────────────
 app = dash.Dash(__name__)
@@ -88,7 +69,7 @@ app.layout = html.Div(
         html.Div([
             html.H1("🎬 MovieLens Live Stream Dashboard",
                     style={"color": "#ffffff", "marginBottom": "4px"}),
-            html.P("Real-time movie rating analytics via Apache Kafka + Spark Structured Streaming",
+            html.P("Real-time movie rating analytics via Apache Spark Structured Streaming",
                    style={"color": "#888", "marginTop": "0"}),
         ]),
 
@@ -191,7 +172,7 @@ def update(n):
         df.groupby("title")["rating"]
         .agg(avg="mean", count="count")
         .reset_index()
-        .query("count >= 2")
+        .query("count >= 1")
         .sort_values("avg", ascending=False)
         .head(10)
     )

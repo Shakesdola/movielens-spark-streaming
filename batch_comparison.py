@@ -21,7 +21,7 @@ os.makedirs(OUT_DIR, exist_ok=True)
 
 # ── Load the streaming output (treated as ground truth) ───────────────────
 print("=== Loading streaming output (Phase 5 Parquet) ===")
-raw_files = [f for f in glob.glob(f"{RAW_DIR}/*") if f.endswith(".parquet")]
+raw_files = [f for f in glob.glob(f"{RAW_DIR}/*") if f.endswith(".parquet") or f.endswith(".snappy.parquet")]
 if not raw_files:
     print(f"No files found in {RAW_DIR} — run Phase 5 first.")
     exit(1)
