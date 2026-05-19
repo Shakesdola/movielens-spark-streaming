@@ -1,0 +1,11 @@
+v1
+{"path":"file:///output/raw_ratings/part-00000-0523a00f-d12c-4f64-adb0-a98f54c37361-c000.snappy.parquet","size":825,"isDir":false,"modificationTime":1779130008281,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-0a012df6-4b2d-499c-a715-edfc4a465e0d-c000.snappy.parquet","size":3302,"isDir":false,"modificationTime":1779130020999,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-32af6b12-bc32-4acf-8e10-477d04539ec0-c000.snappy.parquet","size":4488,"isDir":false,"modificationTime":1779130050797,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-23740d8d-5b3b-42cb-9987-aa12ad6c142a-c000.snappy.parquet","size":4354,"isDir":false,"modificationTime":1779130080891,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-a3f46e8b-9037-47a3-ab68-7604f7cffb45-c000.snappy.parquet","size":4399,"isDir":false,"modificationTime":1779130110891,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-2edb3b4f-9628-4805-8785-59865505344a-c000.snappy.parquet","size":4425,"isDir":false,"modificationTime":1779130140978,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-e60f80c8-6f6e-41ba-9d3e-be3689e23aa5-c000.snappy.parquet","size":4399,"isDir":false,"modificationTime":1779130170512,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-8acd5952-7d26-40dc-a36e-36a76b8fbc3f-c000.snappy.parquet","size":4512,"isDir":false,"modificationTime":1779130201124,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-5d02480a-2e87-40d8-8467-7600435621ef-c000.snappy.parquet","size":4450,"isDir":false,"modificationTime":1779130230631,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/raw_ratings/part-00000-290181ac-55f2-46c1-bc73-c5276d112f11-c000.snappy.parquet","size":4616,"isDir":false,"modificationTime":1779130260684,"blockReplication":1,"blockSize":33554432,"action":"add"}

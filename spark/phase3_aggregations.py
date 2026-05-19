@@ -51,7 +51,7 @@ movie_stats = (
     parsed
     .groupBy("movieId", "title")
     .agg(
-        spark_round(avg("rating"), 3).alias("avg_rating"),
+        spark_round(avg("rating"), 3).alias("avg_rating"),  #Round to 3 decimal places
         count("rating").alias("num_ratings"),
     )
     .filter(col("num_ratings") >= 3)
@@ -74,7 +74,7 @@ q1 = (
     movie_stats.writeStream
     .format("console")
     .option("truncate", False)
-    .option("numRows", 10)
+    .option("numRows", 10)  #Show top 10 rows.
     .outputMode("complete")
     .option("checkpointLocation", "/checkpoints/movies")
     .start()

@@ -4,13 +4,15 @@ services:
   kafka:
     image: apache/kafka:3.7.0
     container_name: movielens_kafka
+    ports:
+      - "9094:9094"
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,EXTERNAL://0.0.0.0:9094,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
@@ -22,7 +24,7 @@ services:
       retries: 10
       start_period: 30s
 
-  # ── 2. Producer — streams fake MovieLens ratings into Kafka ───────────────
+  # ── 2. Producer — replays MovieLens ratings into Kafka ───────────────────
   producer:
     build:
       context: ./spark
@@ -37,7 +39,7 @@ services:
       - PYTHONUNBUFFERED=1
     command: python /app/producer.py
 
-  # ── 3. Spark consumer — reads from Kafka and analyses the stream ──────────
+  # ── 3. Spark — reads Kafka, aggregates, writes Parquet ───────────────────
   spark:
     build:
       context: ./spark
@@ -49,7 +51,34 @@ services:
     volumes:
       - ./spark:/app
       - ./checkpoints:/checkpoints
+      - ./output:/output
+    ports:
+      - "8050:8050"   # Used for phase 6 with dashboard
     environment:
       - PYTHONUNBUFFERED=1
+
     # Change this line to switch phases:
-    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase2_spark_console.py
+    #command: python /app/phase1_kafka_test.py
+    #command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase2_spark_console.py
+    #command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase3_aggregations.py
+    #command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase4_windows.py
+#    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase5_parquet_sink.py
+    command: spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /app/phase6_live_dashboard.py
+
+  # Only for phase 5, otherwise comment this service
+  # ── 4. Dashboard — reads Parquet written by Spark, serves charts ─────────
+#  dashboard:
+#    build:
+#      context: ./spark
+#      dockerfile: Dockerfile
+#    container_name: movielens_dashboard
+#    depends_on:
+#      - spark
+#    volumes:
+#      - ./spark:/app        # so it can find dashboard.py
+#      - ./output:/output    # same folder Spark writes Parquet to
+#    ports:
+#      - "8050:8050"
+#    environment:
+#      - PYTHONUNBUFFERED=1
+#    command: python /app/dashboard.py

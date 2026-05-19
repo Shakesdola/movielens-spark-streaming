@@ -1,2 +1,6 @@
 kafka-python==2.0.2
 pyspark==3.5.1
+dash==2.16.1
+plotly==5.20.0
+pandas==2.2.0
+pyarrow==15.0.0

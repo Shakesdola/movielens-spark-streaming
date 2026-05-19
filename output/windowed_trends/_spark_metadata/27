@@ -1,0 +1,5 @@
+v1
+{"path":"file:///output/windowed_trends/part-00000-94527886-ffe7-4fc2-83aa-3f90ded2d0a4-c000.snappy.parquet","size":1841,"isDir":false,"modificationTime":1779130801038,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00001-41c9c796-6302-4b74-b41c-e3dba557b456-c000.snappy.parquet","size":1745,"isDir":false,"modificationTime":1779130800985,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00002-52f0e9b3-caf9-4039-a163-a63e241fdcdc-c000.snappy.parquet","size":1810,"isDir":false,"modificationTime":1779130800986,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00003-acef4157-11f0-4d36-85a8-5e2a107896e3-c000.snappy.parquet","size":1905,"isDir":false,"modificationTime":1779130800979,"blockReplication":1,"blockSize":33554432,"action":"add"}

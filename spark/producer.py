@@ -89,8 +89,12 @@ def main():
     ratings = load_ratings(RATINGS_FILE)
 
     # Shuffle so we don't stream in timestamp order (simulates live arrivals)
+    random.seed(42)
     random.shuffle(ratings)
     print(f"  Shuffled ratings — streaming will begin now.\n")
+    # OR
+    # Sort by timestamp ascending — replays history in chronological order
+    # ratings.sort(key=lambda r: int(r["timestamp"]))
 
     producer = wait_for_kafka()
 
@@ -118,6 +122,7 @@ def main():
                 }
 
                 producer.send(TOPIC, value=msg)
+
                 count += 1
                 print(f"  [{count:>5}] User {row['userId']:>6}  "
                       f"{row['rating']}⭐  '{movie['title']}'")
