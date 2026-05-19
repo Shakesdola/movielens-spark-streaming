@@ -388,7 +388,7 @@ def update(_n):
         fig_top.update_yaxes(
             autorange="reversed",
             automargin=True,
-            tickfont=dict(size=10),
+            tickfont=dict(size=14),
         )
 
     # ── Chart 3: rolling line — ratings per 10-second bucket ─────────────

@@ -1,0 +1,14 @@
+v1
+{"path":"file:///output/windowed_trends/part-00000-9d9a69fb-6726-4085-8245-9b9479f049c6-c000.snappy.parquet","size":799,"isDir":false,"modificationTime":1779206401682,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00000-ef1aa17b-3c2e-4022-9d6c-6125daa674af-c000.snappy.parquet","size":799,"isDir":false,"modificationTime":1779206404520,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00000-f5661911-d1fc-41f7-8330-300ededd1a87-c000.snappy.parquet","size":799,"isDir":false,"modificationTime":1779206431019,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00000-dfb8ee24-a534-400a-925c-115487b04e7e-c000.snappy.parquet","size":799,"isDir":false,"modificationTime":1779206461058,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00000-be8ef827-00fb-4192-9b45-d1e4db133c76-c000.snappy.parquet","size":799,"isDir":false,"modificationTime":1779206491504,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00000-bb7b6646-eb58-4fec-819d-d026224d1363-c000.snappy.parquet","size":799,"isDir":false,"modificationTime":1779206521125,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00000-85d5b828-4ed9-4d3f-94b6-a1609538eec3-c000.snappy.parquet","size":799,"isDir":false,"modificationTime":1779206551238,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00000-a723c6a5-0c64-4008-b7f2-d6efb6c32ada-c000.snappy.parquet","size":1816,"isDir":false,"modificationTime":1779206581278,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00001-5205e90e-9b54-47bf-922b-fc1e227850a5-c000.snappy.parquet","size":1865,"isDir":false,"modificationTime":1779206581240,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00002-83a1bbb3-a524-44f8-803d-33e30de83c7d-c000.snappy.parquet","size":1768,"isDir":false,"modificationTime":1779206581240,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00003-20782a37-79b3-4525-a6af-988dde14017d-c000.snappy.parquet","size":1797,"isDir":false,"modificationTime":1779206581240,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00000-f11ebba2-a299-4e65-81e7-1953d11c9fd2-c000.snappy.parquet","size":799,"isDir":false,"modificationTime":1779206610841,"blockReplication":1,"blockSize":33554432,"action":"add"}
+{"path":"file:///output/windowed_trends/part-00000-400a45cd-94b6-427d-a42d-62c04e959dda-c000.snappy.parquet","size":799,"isDir":false,"modificationTime":1779206641300,"blockReplication":1,"blockSize":33554432,"action":"add"}
