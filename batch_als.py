@@ -41,10 +41,10 @@ if not raw_files:
     print(f"No files found in {RAW_DIR} — run Phase 5 first.")
     exit(1)
 
-# Load into Spark DataFrame
-df = spark.read.parquet(*raw_files)
+# Load into Spark DataFrame and deduplicate
+df = spark.read.parquet(*raw_files).dropDuplicates(["userId", "movieId"])
 df.cache()
-print(f"  Records loaded: {df.count():,}")
+print(f"  Records loaded (deduplicated): {df.count():,}")
 
 # ── Prepare data for ALS ──────────────────────────────────────────────────
 # ALS requires integer IDs — convert string userId and movieId to integers
